@@ -1,0 +1,111 @@
+<div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-4">
+  <div class="toolbar flex space-x-2 mb-4">
+      <button class="btn-bold px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="formatText('bold')">Bold</button>
+      <button class="btn-italic px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="formatText('italic')">Italic</button>
+      <button class="btn-underline px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="formatText('underline')">Underline</button>
+      <select class="text-size px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" >
+          <option value="1">Small</option>
+          <option value="3">Normal</option>
+          <option value="5">Large</option>
+      </select>
+      <input type="color" class="text-color px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"  title="Text Color">
+      <button class="btn-left px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="alignText('Left')">Left</button>
+      <button class="btn-center px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="alignText('Center')">Center</button>
+      <button class="btn-right px-2 py-1 bg-gray-200 rounded hover:bg-gray-300" (click)="alignText('Right')">Right</button>
+  </div>
+  <div class="editor border p-4 rounded bg-white min-h-[150px]" contenteditable="true"></div>
+</div>
+
+<p>
+  tst works!
+</p>
+<div>
+  <input type="file" accept=".csv" id="csvFileInput" />
+  <div class="relative inline-block group">
+    <button 
+      (click)="uploadCsv()" 
+      class="bg-blue-500 text-white py-2 px-4 rounded"
+    >
+      Upload CSV
+    </button>
+    <span class="absolute top-full left-1/2 -translate-x-1/2 bg-green-100 text-green-500 border border-green-500 p-1 rounded hidden group-hover:block whitespace-nowrap">
+      Upload a CSV file to the application
+    </span>
+  </div>
+</div>
+<div class="p-6 text-center">
+  <h1 class="text-3xl font-bold mb-6">Country List</h1>
+ 
+  <input type="text" placeholder="Search countries..." class="mb-4 p-2 
+  border border-gray-300 rounded w-1/2" [(ngModel)]="searchTerm" (input)="filterCountries()" (keydown)="onKeyDown($event, searchTerm)" />
+  <div *ngIf="filteredCountries.length > 0" class="absolute bg-white border border-gray-300 rounded w-1/2 mt-1">
+    <div *ngFor="let country of filteredCountries; let i = index" class="p-2 hover:bg-gray-200 cursor-pointer" (keydown)="onKeyDown($event, country.name)" [ngClass]="{'bg-blue-200': i === selectedCountryIndex}">
+      {{ country.name }}
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <button (click)="addBlankRow(); showBlankRow = true" class="mb-4 bg-blue-500 text-white py-2 px-4 rounded">Add Blank Row</button>
+    <table class="min-w-full bg-white border border-gray-300">
+      <thead>
+        <tr class="bg-gray-200 text-gray-700">
+          <th (click)="sortData('name')" class="cursor-pointer py-2 px-4 border-b">Country Name</th>
+          <th (click)="sortData('population')" class="cursor-pointer py-2 px-4 border-b">Population</th>
+          <th (click)="sortData('area')" class="cursor-pointer py-2 px-4 border-b">Area (km²)</th>
+          <th (click)="sortData('capital')" class="cursor-pointer py-2 px-4 border-b">Capital</th>
+          <th class="cursor-pointer py-2 px-4 border-b">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="showBlankRow">
+          <td colspan="5" class="py-2 px-4 border-b text-center"></td>
+        </tr>
+        <tr *ngIf="showBlankRow">
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="blankRow.name" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="blankRow.population" type="number" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="blankRow.area" type="number" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="blankRow.capital" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b">
+            <button class="bg-transparent border-0 cursor-pointer" aria-label="Edit" (click)="updateRowData(blankRow)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-1.5 1.5-3-3 1.5-1.5z"/>
+                <path fill-rule="evenodd" d="M1 13.5V15h1.5l8.5-8.5-1.5-1.5L1 13.5z"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="showBlankRow">
+          <td colspan="5" class="py-2 px-4 border-b text-center">
+            <button 
+              (click)="updateCountry(countries.length - 1)" 
+              class="mt-2 bg-green-500 text-white py-2 px-4 rounded" 
+              title="Update the last country row"
+              data-tooltip="Update the last country row"
+            >
+              Update Row
+            </button>
+          </td>
+        </tr>
+        <tr *ngFor="let country of paginatedCountries; let i = index" class="hover:bg-gray-100">
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="country.name" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="country.population" type="number" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="country.area" type="number" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b"><input [(ngModel)]="country.capital" class="border rounded p-1" /></td>
+          <td class="py-2 px-4 border-b">
+            <button class="bg-transparent border-0 cursor-pointer" aria-label="Edit" (click)="updateRowData(country)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-1.5 1.5-3-3 1.5-1.5z"/>
+                <path fill-rule="evenodd" d="M1 13.5V15h1.5l8.5-8.5-1.5-1.5L1 13.5z"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="flex justify-center mt-4">
+      <button (click)="previousPage()" class="cursor-pointer mx-4 text-xl" [class.disabled]="currentPage === 1">&#9664;</button>
+      <span class="self-center">Page {{ currentPage }} of {{ math.ceil(countries.length / itemsPerPage) }}</span>
+      <button (click)="nextPage()" class="cursor-pointer mx-4 text-xl" [class.disabled]="currentPage === math.ceil(countries.length / itemsPerPage)">&#9654;</button>
+    </div>
+  </div>
+</div>

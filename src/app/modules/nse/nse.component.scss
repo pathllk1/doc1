@@ -1,0 +1,27 @@
+@keyframes blink {
+  0% { border-color: lime; }
+  50% { border-color: violet; }
+  100% { border-color: lime; }
+}
+.focus\:blink:focus {
+  animation: blink 2s infinite;
+}
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+
+  th,
+  td {
+    border: 1px solid #000; // Add border to table cells
+    padding: 4px; // Reduce padding for thinner rows
+  }
+
+  tr {
+    height: 30px; // Set a specific height for table rows
+  }
+}
+
+.tradingview-widget-container {
+  height: 500px;
+  width: 100%;
+}

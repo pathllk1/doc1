@@ -1,0 +1,162 @@
+<div class="container p-6">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10" *ngIf="showPopup">
+    <!-- Modal Container -->
+    <div class="bg-white rounded-lg border-4 border-lime-500 w-1/3 shadow-lg">
+      <form [formGroup]="addForm" (ngSubmit)="onSubmit()"> <!-- Modal Header -->
+        <div class="flex justify-between items-center bg-lime-300 p-4 rounded-t-lg">
+          <h3 *ngIf="!isEdit" class="text-xl font-bold mb-4">Add New Document</h3>
+          <h3 *ngIf="isEdit" class="text-xl font-bold mb-4">Update Document</h3> <button class="text-white"
+            (click)="closePopup()">
+            <!-- SVG Close Button --> <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg> </button>
+        </div> <!-- Modal Body -->
+        <div class="p-6">
+  
+          <div class="mb-2">
+            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reference No:</label>
+            <input type="text" formControlName="refno"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+          </div>
+          <div class="mb-2">
+            <label>Description:</label>
+            <textarea formControlName="desc" rows="4"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></textarea>
+          </div>
+          <div class="mb-2">
+            <label>Start Date:</label>
+            <input type="date" formControlName="sdate"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+          </div>
+          <div class="mb-2">
+            <label>End Date:</label>
+            <input type="date" formControlName="edate"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              required>
+          </div>
+          <div class="mb-2">
+            <label>Type:</label>
+            <input type="text" list="type-list" formControlName="type"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+              <datalist id="type-list">
+                <option *ngFor="let doc of docs">
+                  {{ doc.type }}
+                </option>
+              </datalist>
+          </div>
+          <div class="mb-2 flex space-x-4">
+            <div class="flex flex-col space-y-1 w-1/2">
+              <label>Value:</label>
+              <input type="text" formControlName="val"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            </div>
+            <div class="flex flex-col space-y-1 w-1/2">
+              <label>Remaining Days:</label>
+              <input type="text" formControlName="rage"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+            <input type="text" list="status-list" id="status" formControlName="status"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+            <datalist id="status-list">
+              <option *ngFor="let doc of docs">
+                {{ doc.status }}
+              </option>
+            </datalist>
+          </div>
+          <input type="hidden" formControlName="id">
+        </div> <!-- Modal Footer -->
+        <div class="bg-lime-300 p-4 rounded-b-lg flex justify-end">
+          <button type="submit"
+            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+          <button
+            class="text-white bg-orange-700 hover:bg-orange-800 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-800 ml-2"
+            (click)="closePopup()">
+            Cancel</button>
+          <button *ngIf="isEdit"
+            class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800 ml-2"
+            (click)="deleteDoc($event)">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  
+  
+  
+  <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+    <div class="flex flex-column sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
+      <div>
+        <button class="bg-blue-500 text-white px-4 py-2 rounded mr-2 inline-flex items-center" (click)="openPopup()">
+          <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+            width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <path stroke="red" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 7.757v8.486M7.757 12h8.486M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          Add New</button>
+        <button class="bg-lime-400 text-white px-4 py-2 rounded mb-4" (click)="exportToCSV()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+            class="bi bi-file-earmark-excel" viewBox="0 0 16 16">
+            <path
+              d="M5.5 0a.5.5 0 0 1 .5.5v1H12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h3.5zM5 1v1h6V1H5zm7 1H6v1h6V2zM1 2v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5H9.5a.5.5 0 0 1-.5-.5V2H2a1 1 0 0 0-1 1zm2.5 5.5h1v1h-1v-1zm0 2h1v1h-1v-1zm2-2h1v1h-1v-1zm0 2h1v1h-1v-1zm2-2h1v1h-1v-1zm0 2h1v1h-1v-1z" />
+          </svg>
+        </button>
+      </div>
+      <label for="table-search" class="sr-only">Search</label>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 rtl:inset-r-0 rtl:right-0 flex items-center ps-3 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <input type="text" id="table-search"
+          class="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-80 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          placeholder="Search for items" [(ngModel)]="searchText">
+      </div>
+    </div>
+  
+    <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+      <table class="min-w-full bg-white border border-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <tr>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Ref No</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Description</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Start Date</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">End Date</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Type</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Value</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Remaining Days</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Status</th>
+            <th scope="col" class="bg-blue-100 px-6 py-3 border">Action</th>
+          </tr>
+        </thead>
+        <tr *ngFor="let doc of filteredRows()" class="hover:bg-gray-100 py-1">
+          <td class="px-2 border">{{doc.refno}}</td>
+          <td class="px-2 border">{{doc.desc}}</td>
+          <td class="px-2 border">{{doc.sdate | date: 'dd/MM/yyyy'}}</td>
+          <td class="px-2 border">{{doc.edate | date: 'dd/MM/yyyy'}}</td>
+          <td class="px-2 border">{{doc.type}}</td>
+          <td class="px-2 border">{{doc.val}}</td>
+          <td class="px-2 border" [ngClass]="getRemainingDaysClass(doc.rage)">{{doc.rage}}</td>
+          <td class="px-2 border">{{doc.status}}</td>
+          <td class="px-2 border">
+            <button (click)="editDoc(doc)" class="bg-blue-500 text-white rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
