@@ -21,6 +21,7 @@
     "useDefineForClassFields": false,
     "skipLibCheck": true,
     "strictNullChecks": false,
+    "allowSyntheticDefaultImports": true,
     "lib": [
       "ES2022",
       "dom"

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NSEService } from './nse.service';
 import { Subscription } from 'rxjs';
 import Chart from 'chart.js/auto';
+import PouchDB from 'pouchdb';
 
 interface MonthlySummary {
   month: string;
@@ -43,6 +44,15 @@ export class NseComponent implements OnInit, OnDestroy {
   private chart: Chart | undefined;
   @ViewChild('container', { static: true }) container: ElementRef;
   private widget: any;
+  private db: PouchDB.Database;
+  private gsDb: PouchDB.Database;
+  private timerInterval: any;
+  timerMinutes: number = 3;
+  timerSeconds: number = 0;
+  topGainers: any[] = [];
+  topLosers: any[] = [];
+  priceGainers: any[] = [];
+  priceLosers: any[] = [];
 
   constructor(private fb: FormBuilder, private nseService: NSEService) {
     this.documentForm = this.fb.group({
@@ -55,6 +65,8 @@ export class NseComponent implements OnInit, OnDestroy {
       oth_chg: [''],
       famt: ['', Validators.required]
     });
+    this.db = new PouchDB('nse_records');
+    this.gsDb = new PouchDB('gs_records');
   }
 
   ngOnInit(): void {
@@ -99,10 +111,20 @@ export class NseComponent implements OnInit, OnDestroy {
     if (this.chart) {
       this.chart.destroy();
     }
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    // Close PouchDB connections
+    if (this.db) {
+      this.db.close();
+    }
+    if (this.gsDb) {
+      this.gsDb.close();
+    }
     console.log(`Number of subscriptions before unsubscribe: ${this.subscriptions.length}`);
-  this.subscriptions.forEach(sub => sub.unsubscribe());
-  this.subscriptions = []; // Clear the subscriptions array
-  console.log(`Number of subscriptions after unsubscribe: ${this.subscriptions.length}`);
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
+    console.log(`Number of subscriptions after unsubscribe: ${this.subscriptions.length}`);
   }
 
   private async initializeData(): Promise<void> {
@@ -112,6 +134,8 @@ export class NseComponent implements OnInit, OnDestroy {
       await this.gs_sheet();
       await this.createMonthlyChart(); // Updated to await the chart creation
       await this.fetchNSERecords();
+      // Start the timer after initialization
+      this.startTimer();
     } catch (error) {
       console.error('Error during initialization:', error);
     }
@@ -186,6 +210,75 @@ export class NseComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error creating monthly chart:', error);
       throw error;
+    }
+  }
+
+  private startTimer(): void {
+    this.timerMinutes = 5;
+    this.timerSeconds = 0;
+    
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    this.timerInterval = setInterval(() => {
+      if (this.timerSeconds > 0) {
+        this.timerSeconds--;
+      } else if (this.timerMinutes > 0) {
+        this.timerMinutes--;
+        this.timerSeconds = 59;
+      } else {
+        // Timer reached zero
+        this.setupPouchDBRefresh();
+        this.timerMinutes = 5;
+        this.timerSeconds = 0;
+      }
+    }, 1000);
+  }
+
+  private async setupPouchDBRefresh(): Promise<void> {
+    console.log('Starting PouchDB refresh...');
+    try {
+      // Destroy existing NSE PouchDB
+      await this.db.destroy();
+      this.db = new PouchDB('nse_records');
+
+      // Destroy existing GS PouchDB
+      await this.gsDb.destroy();
+      this.gsDb = new PouchDB('gs_records');
+      
+      // Fetch fresh NSE data
+      const sub = this.nseService.getNSERecords().subscribe({
+        next: async (data) => {
+          this.nseRecords_all = data;
+          console.log('NSE Records reloaded from Service');
+          
+          // Store NSE records in PouchDB
+          for (const record of data) {
+            const { __v, ...cleanRecord } = record;
+            const docId = record._id || `record_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            
+            try {
+              await this.db.put({
+                _id: docId,
+                ...cleanRecord
+              });
+            } catch (putError) {
+              console.warn(`Failed to store NSE record ${docId}:`, putError);
+            }
+          }
+          console.log('NSE Records successfully refreshed in PouchDB');
+
+          // Also refresh GS data
+          await this.gs_sheet();
+        },
+        error: (error) => {
+          console.error('Error refreshing NSE records:', error);
+        }
+      });
+      this.subscriptions.push(sub);
+    } catch (error) {
+      console.error('Error during PouchDB refresh:', error);
     }
   }
 
@@ -341,6 +434,9 @@ export class NseComponent implements OnInit, OnDestroy {
             gainLoss: Number((group.totalCval - group.totalNamt).toFixed(2))
           }));
 
+          // Sort and get top gainers and losers
+          this.updateTopPerformers();
+
           // Calculate overall totals as before
           this.tot_inv = (this.folioData.reduce((sum, record) => sum + parseFloat(record.namt || 0), 0)).toFixed(2);
           this.cur_val = (this.folioData.reduce((sum, record) => sum + parseFloat(record.cval || 0), 0)).toFixed(2);
@@ -359,6 +455,20 @@ export class NseComponent implements OnInit, OnDestroy {
       });
       this.subscriptions.push(sub);
     });
+  }
+
+  private updateTopPerformers(): void {
+    // Sort by gainLoss for gainers (highest to lowest)
+    this.topGainers = [...this.folioSummary]
+      .filter(item => item.gainLoss > 0)
+      .sort((a, b) => b.gainLoss - a.gainLoss)
+      .slice(0, 5);
+
+    // Sort by gainLoss for losers (lowest to highest)
+    this.topLosers = [...this.folioSummary]
+      .filter(item => item.gainLoss < 0)
+      .sort((a, b) => a.gainLoss - b.gainLoss)
+      .slice(0, 5);
   }
 
   getMonthlySummary(records: any): MonthlySummary[] {
@@ -400,29 +510,159 @@ export class NseComponent implements OnInit, OnDestroy {
   }
 
   async gs_sheet(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const sub = this.nseService.gs_sheet().subscribe({
-        next: (data: any[]) => {
-          const gs_rec = data.map(item => ({
-            ...item,
-            symbol: item.symbol.replace('NSE:', '')
-          }));
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        // First try to get data from PouchDB
+        const result = await this.gsDb.allDocs({
+          include_docs: true
+        });
+        
+        if (result.rows.length > 0) {
+          // Data exists in PouchDB, use it
+          const gs_rec = result.rows.map(row => {
+            const doc = row.doc as any;
+            return {
+              ...doc,
+              symbol: doc.symbol ? doc.symbol.replace('NSE:', '') : ''
+            };
+          });
 
           if (this.folioData && this.folioData.length > 0) {
             const folioSymbols = new Set(this.folioData.map(item => item.symbol));
             const filtered_gs_rec = gs_rec.filter(item => folioSymbols.has(item.symbol));
-            console.log('Filtered GS data:', filtered_gs_rec);
+            
+            // Create a map of folio data for quick lookup
+            const folioMap = new Map(this.folioData.map(item => [item.symbol, item]));
+            const priceChanges: any[] = [];
+            
+            // Extract second last history entry and calculate price difference
+            filtered_gs_rec.forEach(record => {
+              if (record.history && record.history.length >= 1) {
+                const secondLastEntry = record.history[record.history.length - 1];
+                const folioData = folioMap.get(record.symbol);
+                if (folioData && folioData.cprice) {
+                  const difference = folioData.cprice - secondLastEntry.close;
+                  const percentageChange = ((difference / secondLastEntry.close) * 100);
+                  priceChanges.push({
+                    symbol: record.symbol,
+                    difference: difference,
+                    percentageChange: percentageChange,
+                    secondLastClose: secondLastEntry.close,
+                    currentPrice: folioData.cprice
+                  });
+                  
+                  console.log(`Symbol: ${record.symbol}`);
+                  console.log(`Second Last Close: ${secondLastEntry.close}`);
+                  console.log(`Current Price (CPRICE): ${folioData.cprice}`);
+                  console.log(`Price Difference: ${difference.toFixed(2)}`);
+                  console.log(`Percentage Change: ${percentageChange.toFixed(2)}%`);
+                  console.log('------------------------');
+                }
+              }
+            });
+
+            // Sort and get top price gainers and losers
+            this.priceGainers = priceChanges
+              .filter(item => item.difference > 0)
+              .sort((a, b) => b.difference - a.difference)
+              .slice(0, 5);
+
+            this.priceLosers = priceChanges
+              .filter(item => item.difference < 0)
+              .sort((a, b) => a.difference - b.difference)
+              .slice(0, 5);
+            
+            console.log('Filtered GS data from PouchDB:', filtered_gs_rec);
           } else {
-            console.log('Processed GS data:', gs_rec);
+            console.log('Full GS data from PouchDB:', gs_rec);
           }
           resolve();
-        },
-        error: (error) => {
-          console.error('Error loading GS sheet data:', error);
-          reject(error);
+          return;
         }
-      });
-      this.subscriptions.push(sub);
+
+        // If no data in PouchDB, fetch from service
+        const sub = this.nseService.gs_sheet().subscribe({
+          next: async (data: any[]) => {
+            const gs_rec = data.map(item => ({
+              ...item,
+              symbol: item.symbol.replace('NSE:', '')
+            }));
+
+            // Store in PouchDB
+            try {
+              // Clear existing records
+              await this.gsDb.destroy();
+              this.gsDb = new PouchDB('gs_records');
+              
+              // Store each record
+              for (const record of data) {
+                const docId = `gs_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+                await this.gsDb.put({
+                  _id: docId,
+                  ...record
+                });
+              }
+              
+              // Create a map of folio data for quick lookup and calculate price changes
+              if (this.folioData && this.folioData.length > 0) {
+                const folioSymbols = new Set(this.folioData.map(item => item.symbol));
+                const filtered_gs_rec = gs_rec.filter(item => folioSymbols.has(item.symbol));
+                const folioMap = new Map(this.folioData.map(item => [item.symbol, item]));
+                const priceChanges: any[] = [];
+
+                filtered_gs_rec.forEach(record => {
+                  if (record.history && record.history.length >= 2) {
+                    const secondLastEntry = record.history[record.history.length - 2];
+                    const folioData = folioMap.get(record.symbol);
+                    if (folioData && folioData.cprice) {
+                      const difference = folioData.cprice - secondLastEntry.close;
+                      const percentageChange = ((difference / secondLastEntry.close) * 100);
+                      priceChanges.push({
+                        symbol: record.symbol,
+                        difference: difference,
+                        percentageChange: percentageChange,
+                        secondLastClose: secondLastEntry.close,
+                        currentPrice: folioData.cprice
+                      });
+                      
+                      console.log(`Symbol: ${record.symbol}`);
+                      console.log(`Second Last Close: ${secondLastEntry.close}`);
+                      console.log(`Current Price (CPRICE): ${folioData.cprice}`);
+                      console.log(`Price Difference: ${difference.toFixed(2)}`);
+                      console.log(`Percentage Change: ${percentageChange.toFixed(2)}%`);
+                      console.log('------------------------');
+                    }
+                  }
+                });
+
+                // Sort and get top price gainers and losers
+                this.priceGainers = priceChanges
+                  .filter(item => item.difference > 0)
+                  .sort((a, b) => b.difference - a.difference)
+                  .slice(0, 5);
+
+                this.priceLosers = priceChanges
+                  .filter(item => item.difference < 0)
+                  .sort((a, b) => a.difference - b.difference)
+                  .slice(0, 5);
+              }
+              console.log('GS Records successfully stored in PouchDB');
+            } catch (dbError) {
+              console.error('Error storing GS records in PouchDB:', dbError);
+            }
+
+            resolve();
+          },
+          error: (error) => {
+            console.error('Error loading GS sheet data:', error);
+            reject(error);
+          }
+        });
+        this.subscriptions.push(sub);
+      } catch (error) {
+        console.error('Error accessing PouchDB for GS data:', error);
+        reject(error);
+      }
     });
   }
 
@@ -444,23 +684,74 @@ export class NseComponent implements OnInit, OnDestroy {
   }
 
   async fetchNSERecords(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const sub = this.nseService.getNSERecords().subscribe({
-        next: (data) => {
-          this.nseRecords_all = data;
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        // First try to get data from PouchDB
+        const result = await this.db.allDocs({
+          include_docs: true
+        });
+        
+        if (result.rows.length > 0) {
+          // Data exists in PouchDB, use it
+          this.nseRecords_all = result.rows.map(row => row.doc);
+          console.log('NSE Records loaded from PouchDB');
           clearTimeout(this.timeoutId);
           this.isLoading = false;
-          console.log('NSE Records loaded successfully');
           resolve();
-        },
-        error: (error) => {
-          console.error('Error fetching NSE records:', error);
-          alert('Error fetching NSE records: ' + error.message);
-          this.isLoading = false;
-          reject(error);
+          return;
         }
-      });
-      this.subscriptions.push(sub);
+
+        // If no data in PouchDB, fetch from service
+        const sub = this.nseService.getNSERecords().subscribe({
+          next: async (data) => {
+            this.nseRecords_all = data;
+            console.log('NSE Records loaded from Service');
+            
+            // Store the records in PouchDB
+            try {
+              // Clear existing records
+              await this.db.destroy();
+              this.db = new PouchDB('nse_records');
+              
+              // Store each record with a unique _id, removing __v field
+              for (const record of data) {
+                // Create a new object without __v field
+                const { __v, ...cleanRecord } = record;
+                const docId = record._id || `record_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+                
+                // Ensure the _id field is properly set
+                const docToStore = {
+                  _id: docId,
+                  ...cleanRecord
+                };
+                
+                try {
+                  await this.db.put(docToStore);
+                } catch (putError) {
+                  console.warn(`Failed to store record ${docId}:`, putError);
+                }
+              }
+              console.log('NSE Records successfully stored in PouchDB');
+            } catch (dbError) {
+              console.error('Error storing records in PouchDB:', dbError);
+            }
+
+            clearTimeout(this.timeoutId);
+            this.isLoading = false;
+            resolve();
+          },
+          error: (error) => {
+            console.error('Error fetching NSE records:', error);
+            alert('Error fetching NSE records: ' + error.message);
+            this.isLoading = false;
+            reject(error);
+          }
+        });
+        this.subscriptions.push(sub);
+      } catch (error) {
+        console.error('Error accessing PouchDB:', error);
+        reject(error);
+      }
     });
   }
 
