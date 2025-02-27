@@ -587,6 +587,7 @@ export class NseComponent implements OnInit, OnDestroy {
               ...item,
               symbol: item.symbol.replace('NSE:', '')
             }));
+            console.log('GS Sheet data loaded:', gs_rec);
 
             // Store in PouchDB
             try {
@@ -611,8 +612,8 @@ export class NseComponent implements OnInit, OnDestroy {
                 const priceChanges: any[] = [];
 
                 filtered_gs_rec.forEach(record => {
-                  if (record.history && record.history.length >= 2) {
-                    const secondLastEntry = record.history[record.history.length - 2];
+                  if (record.history && record.history.length >= 1) {
+                    const secondLastEntry = record.history[record.history.length - 1];
                     const folioData = folioMap.get(record.symbol);
                     if (folioData && folioData.cprice) {
                       const difference = folioData.cprice - secondLastEntry.close;
@@ -855,7 +856,7 @@ export class NseComponent implements OnInit, OnDestroy {
   }
   calculatenAmount(row: any): void {
     if (row.amt !== undefined && row.brokerage !== undefined) {
-      row.namt = parseFloat(row.amt) + parseFloat(row.brokerage);
+      row.namt = parseFloat(row.amt) + (parseFloat(row.brokerage) * parseFloat(row.qnty));
     }
   }
 

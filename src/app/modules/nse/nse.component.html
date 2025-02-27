@@ -194,22 +194,22 @@
           <div>
             <label for="cn_no" class="block text-sm font-medium text-gray-700">CN No:</label>
             <input type="text" id="cn_no" formControlName="cn_no" required
-              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
           </div>
           <div>
             <label for="cn_date" class="block text-sm font-medium text-gray-700">CN Date:</label>
             <input type="date" id="cn_date" formControlName="cn_date" required
-              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
           </div>
           <div>
             <label for="broker" class="block text-sm font-medium text-gray-700">Broker:</label>
             <input type="text" id="broker" formControlName="broker" required
-              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
           </div>
           <div>
             <label for="folio" class="block text-sm font-medium text-gray-700">Folio:</label>
             <input type="text" id="folio" formControlName="folio" required
-              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+              class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
           </div>
         </div>
       </div>
@@ -233,23 +233,25 @@
       </div>
     </form>
     <div class="p-4 overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-full divide-y divide-gray-200 data-table">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">SL</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+            <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Brokerage</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">NAMT</th>
+            <th class="w-auto" style="display: none;">rid</th>
             <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr>
-            <td class="px-2 py-1 whitespace-nowrap text-sm">{{nseRecords.length + 1}}</td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 whitespace-nowrap text-sm">{{nseRecords.length + 1}}</td>
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.symbol" [ngModelOptions]="{standalone: true}"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" 
                 list="sym-list" />
@@ -257,30 +259,35 @@
                 <option *ngFor="let doc of nseRecords_all">{{ doc.SYMBOL }}</option>
               </datalist>
             </td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 border border-gray-300">
+              <input [(ngModel)]="tableData.sector" [ngModelOptions]="{standalone: true}"
+                class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
+            </td>
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.price" [ngModelOptions]="{standalone: true}"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
             </td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.qnty" [ngModelOptions]="{standalone: true}"
                 (ngModelChange)="calculateAmount(tableData)"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
             </td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.amt" [ngModelOptions]="{standalone: true}"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
             </td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.brokerage" [ngModelOptions]="{standalone: true}"
                 (ngModelChange)="calculatenAmount(tableData)"
                 (keydown.enter)="updateRowData(tableData)"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
             </td>
-            <td class="px-2 py-1 border border-gray-300">
+            <td class="px-2 py-1 mt-2 border border-gray-300">
               <input [(ngModel)]="tableData.namt" [ngModelOptions]="{standalone: true}"
                 class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500" />
             </td>
-            <td class="px-2 py-1 text-center">
+            <td style="display: none;"><input [(ngModel)]="tableData.rid" class="rounded p-1" /></td>
+            <td class="px-2 py-1 mt-2 text-center">
               <button class="text-blue-600 hover:text-blue-900" (click)="updateRowData(tableData)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
@@ -308,7 +315,7 @@
             <td style="display: none;"><input [(ngModel)]="row.folio" class="rounded p-1" /></td>
             <td style="display: none;"><input [(ngModel)]="row.type" class="rounded p-1" /></td>
             <td style="display: none;"><input [(ngModel)]="row.rid" class="rounded p-1" /></td>
-            <td class="py-2 px-4 w-auto text-center">
+            <td class="py-2 px-4 w-auto text-center" nowrap>
               <button class="bg-transparent border-0 cursor-pointer mr-2" aria-label="Edit"
                 (click)="updateRowData(row)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi bi-pencil"
@@ -337,12 +344,12 @@
         <div>
           <label for="oth_chg1" class="block text-sm font-medium text-gray-700">Other Charges:</label>
           <input type="number" id="oth_chg1" name="oth_chg1" [(ngModel)]="oth_chg1" (ngModelChange)="updateCharges()"
-            class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+            class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
         </div>
         <div>
           <label for="famt1" class="block text-sm font-medium text-gray-700">Final Amount:</label>
           <input type="number" id="famt1" [(ngModel)]="famt1"
-            class="mt-1 block w-full border-2 rounded-md shadow-sm focus:ring-lime-500 focus:border-lime-500 sm:text-sm">
+            class="mt-1 block w-full border-2 rounded-md shadow-sm focus:blink focus:outline-none sm:text-sm">
         </div>
       </div>
     </div>
